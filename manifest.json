@@ -1,0 +1,9 @@
+{
+  "name": "Rastreador PC Clon - Glenn",
+  "short_name": "Rastreador PC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#ef4444",
+  "description": "Monitoreo cada 5 minutos y alarma sonora para detectar encendido del PC clonado."
+}
