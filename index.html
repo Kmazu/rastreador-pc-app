@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#090d16" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>Rastreador PC Clon — Glenn</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #111827;
+      --card-border: #1f2937;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --blue: #3b82f6;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+    body.alarm-mode {
+      animation: flashRed 0.8s infinite alternate;
+    }
+    @keyframes flashRed {
+      from { background-color: #090d16; }
+      to { background-color: #450a0a; }
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+    }
+    .header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge.online {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .badge.alert {
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+      border: 1px solid var(--red);
+    }
+    .status-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .radar {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      position: relative;
+      background: rgba(16, 185, 129, 0.12);
+      border: 2px solid var(--green);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+    }
+    .radar.detected {
+      background: rgba(239, 68, 68, 0.22);
+      border-color: var(--red);
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);
+      animation: pulseAlert 0.7s infinite alternate;
+    }
+    @keyframes pulseAlert {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); }
+    }
+    .status-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .status-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .timer-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .metric {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .metric-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .metric-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 16px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-guard {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+    }
+    .btn-guard.active {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    }
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-secondary {
+      background: #1f2937;
+      color: var(--text);
+      border: 1px solid #374151;
+      padding: 12px;
+      font-size: 0.88rem;
+    }
+    .btn-stop-alarm {
+      background: var(--red);
+      color: white;
+      display: none;
+      font-size: 1.05rem;
+      padding: 16px;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+    .card h2 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.86rem;
+    }
+    .check-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .log-box {
+      max-height: 210px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: #d1d5db;
+    }
+    .log-entry {
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.25);
+      border-left: 3px solid var(--blue);
+    }
+    .log-entry.alert {
+      border-left-color: var(--red);
+      background: rgba(239, 68, 68, 0.15);
+      color: #fecaca;
+    }
+    .ntfy-box {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .ntfy-topic {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 6px 10px;
+      background: #030712;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: #60a5fa;
+      font-family: monospace;
+      font-weight: 700;
+      user-select: all;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🛡️ Rastreador PC Clon</h1>
+    <span id="connBadge" class="badge online">Vigilando</span>
+  </div>
+
+  <div class="status-card">
+    <div id="radarIcon" class="radar">📡</div>
+    <div id="statusTitle" class="status-title">PC Robado: Sin Señal</div>
+    <div id="statusSub" class="status-sub">
+      Verificando automáticamente cada 5 minutos por VPN (glenn-montiel), SSH (Vostro-3400) y Red Local.
+    </div>
+
+    <div class="timer-row">
+      <div class="metric">
+        <div class="metric-label">Próximo Chequeo</div>
+        <div id="countdownVal" class="metric-value">05:00</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Última Revisión</div>
+        <div id="lastCheckVal" class="metric-value">--:--:--</div>
+      </div>
+    </div>
+  </div>
+
+  <button id="btnStopAlarm" class="btn btn-stop-alarm" onclick="stopSiren()">
+    🔕 SILENCIAR ALARMA SONORA
+  </button>
+
+  <button id="btnGuard" class="btn btn-guard" onclick="enableAudioGuard()">
+    🔊 ACTIVAR GUARDIA SONORA 24/7 EN TELÉFONO
+  </button>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="triggerManualCheck()">
+      🔍 Verificar Ahora
+    </button>
+    <button class="btn btn-secondary" onclick="testAlarm()">
+      🚨 Probar Sonido
+    </button>
+  </div>
+
+  <div class="card">
+    <h2>Sensores de Detección</h2>
+    <div class="check-list">
+      <div class="check-item">
+        <span>1. Conflicto Túnel OpenVPN (glenn-montiel)</span>
+        <strong id="sensorVpnConflict" style="color: var(--green);">Sin choque</strong>
+      </div>
+      <div class="check-item">
+        <span>2. Sondeo IPs VPN (10.9.29.250 / 10.9.51.x)</span>
+        <strong id="sensorVpnIp" style="color: var(--muted);">Inactivo</strong>
+      </div>
+      <div class="check-item">
+        <span>3. Huella SSH Clon (innovex-Vostro-3400)</span>
+        <strong id="sensorSshKey" style="color: var(--muted);">No detectada</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>
+      <span>Historial de Chequeos (Cada 5 min)</span>
+      <span id="totalChecks" style="font-size: 0.75rem;">0 chequeos</span>
+    </h2>
+    <div id="logContainer" class="log-box">
+      <div class="log-entry">Iniciando monitor cada 5 minutos...</div>
+    </div>
+  </div>
+
+  <div class="card ntfy-box">
+    <h2>📲 Alerta con Pantalla Apagada (4G / 5G)</h2>
+    Para que tu teléfono suene incluso fuera de casa o con la pantalla bloqueada:
+    <br/>1. Instala la app gratuita <strong>ntfy</strong> (Play Store / App Store).
+    <br/>2. Suscríbete al canal privado:
+    <br/><span id="ntfyTopicText" class="ntfy-topic">glenn_montiel_pc_tracker_9942</span>
+  </div>
+
+  <script>
+    const NTFY_TOPIC = "glenn_montiel_pc_tracker_9942";
+    const CHECK_INTERVAL_SEC = 300; // 5 minutes
+    let remainingSec = CHECK_INTERVAL_SEC;
+    let audioCtx = null;
+    let guardEnabled = false;
+    let sirenInterval = null;
+    let wakeLock = null;
+    let lastAlertTimestamp = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    async function enableAudioGuard() {
+      initAudio();
+      guardEnabled = true;
+
+      // Play short confirmation beep
+      playBeep(880, 0.15);
+      setTimeout(() => playBeep(1320, 0.2), 180);
+
+      // Keep AudioContext alive on mobile with silent oscillator
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+
+      // Request notification permission
+      if ("Notification" in window && Notification.permission !== "granted") {
+        try { await Notification.requestPermission(); } catch (e) {}
+      }
+
+      // Request Screen WakeLock so mobile browser stays active
+      if ("wakeLock" in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request("screen");
+        } catch (e) {}
+      }
+
+      const btn = document.getElementById("btnGuard");
+      btn.classList.add("active");
+      btn.textContent = "✅ GUARDIA SONORA 24/7 ACTIVA (NO CIERRES ESTA PESTAÑA)";
+    }
+
+    function playBeep(freq, duration) {
+      if (!audioCtx) initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function startSiren(reason) {
+      initAudio();
+      document.body.classList.add("alarm-mode");
+      document.getElementById("radarIcon").classList.add("detected");
+      document.getElementById("radarIcon").textContent = "🚨";
+      document.getElementById("btnStopAlarm").style.display = "flex";
+      document.getElementById("connBadge").className = "badge alert";
+      document.getElementById("connBadge").textContent = "¡DETECTADO!";
+      document.getElementById("statusTitle").textContent = "¡ALERTA! PC CLON DETECTADO";
+      document.getElementById("statusSub").textContent = reason || "Se detectó actividad del PC clonado en la red / VPN.";
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("🚨 ¡PC CLONADO ENCENDIDO!", {
+          body: reason || "El rastreador detectó conexión del PC.",
+          requireInteraction: true
+        });
+      }
+
+      if (sirenInterval) clearInterval(sirenInterval);
+      let high = true;
+      const pulse = () => {
+        playBeep(high ? 1150 : 780, 0.35);
+        if (navigator.vibrate) navigator.vibrate([400, 150, 400]);
+        high = !high;
+      };
+      pulse();
+      sirenInterval = setInterval(pulse, 420);
+    }
+
+    function stopSiren() {
+      if (sirenInterval) {
+        clearInterval(sirenInterval);
+        sirenInterval = null;
+      }
+      document.body.classList.remove("alarm-mode");
+      document.getElementById("btnStopAlarm").style.display = "none";
+      document.getElementById("radarIcon").classList.remove("detected");
+      document.getElementById("radarIcon").textContent = "📡";
+    }
+
+    function testAlarm() {
+      enableAudioGuard();
+      startSiren("PRUEBA DE SONIDO: Así sonará tu teléfono cuando el PC robado se encienda.");
+    }
+
+    async function fetchStatus(manual = false) {
+      try {
+        const endpoint = manual ? "/api/check-now" : "/api/status";
+        const res = await fetch(endpoint, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        updateUI(data);
+        return;
+      } catch (err) {
+        // Cloud standalone mode (when local PC is turned off)
+        try {
+          const ntfyRes = await fetch(`https://ntfy.sh/${NTFY_TOPIC}/json?poll=1&since=12h`, { cache: "no-store" });
+          const text = await ntfyRes.text();
+          const lines = text.trim().split("\n").filter(Boolean);
+          const msgs = lines.map(l => { try { return JSON.parse(l); } catch(e) { return null; } }).filter(m => m && m.event === "message");
+          if (msgs.length > 0) {
+            const lastMsg = msgs[msgs.length - 1];
+            const lastTime = new Date(lastMsg.time * 1000).toLocaleTimeString();
+            document.getElementById("lastCheckVal").textContent = lastTime;
+            document.getElementById("totalChecks").textContent = `${msgs.length} reportes en nube`;
+            const container = document.getElementById("logContainer");
+            container.innerHTML = msgs.slice().reverse().slice(0, 30).map(m => {
+              const t = new Date(m.time * 1000).toLocaleTimeString();
+              const isAlert = (m.priority >= 4) || (m.message && m.message.includes("ALERTA"));
+              return `<div class="log-entry ${isAlert ? 'alert' : ''}"><strong>[${t}]</strong> ${m.message}</div>`;
+            }).join("");
+            if ((lastMsg.priority >= 4 || (lastMsg.message && lastMsg.message.includes("ALERTA"))) && lastMsg.id !== lastAlertTimestamp) {
+              lastAlertTimestamp = lastMsg.id;
+              startSiren(lastMsg.message);
+            }
+          }
+        } catch (e2) {}
+      }
+    }
+
+    function updateUI(data) {
+      document.getElementById("lastCheckVal").textContent = data.last_check_time || "--:--:--";
+      document.getElementById("totalChecks").textContent = `${data.total_checks || 0} chequeos`;
+
+      const vpnConf = document.getElementById("sensorVpnConflict");
+      vpnConf.textContent = data.sensors?.vpn_conflict ? "¡CHOQUE DETECTADO!" : "Sin choque";
+      vpnConf.style.color = data.sensors?.vpn_conflict ? "var(--red)" : "var(--green)";
+
+      const vpnIp = document.getElementById("sensorVpnIp");
+      vpnIp.textContent = data.sensors?.vpn_ip_status || "Inactivo";
+      vpnIp.style.color = data.sensors?.vpn_ip_detected ? "var(--red)" : "var(--muted)";
+
+      const sshKey = document.getElementById("sensorSshKey");
+      sshKey.textContent = data.sensors?.ssh_clone_found ? `¡HALLADO EN ${data.sensors.ssh_clone_ip}!` : "No detectada";
+      sshKey.style.color = data.sensors?.ssh_clone_found ? "var(--red)" : "var(--muted)";
+
+      if (Array.isArray(data.history)) {
+        const container = document.getElementById("logContainer");
+        container.innerHTML = data.history.map(item => `
+          <div class="log-entry ${item.detected ? 'alert' : ''}">
+            <strong>[${item.time}]</strong> ${item.summary}
+          </div>
+        `).join("");
+      }
+
+      if (data.detected && data.last_alert_id !== lastAlertTimestamp) {
+        lastAlertTimestamp = data.last_alert_id;
+        startSiren(data.alert_reason);
+      }
+    }
+
+    async function triggerManualCheck() {
+      document.getElementById("statusSub").textContent = "Ejecutando escaneo inmediato de VPN y Red...";
+      await fetchStatus(true);
+      remainingSec = CHECK_INTERVAL_SEC;
+    }
+
+    // Subscribe to real-time cloud push via ntfy SSE so phone gets instant alerts anywhere
+    function connectCloudStream() {
+      try {
+        const es = new EventSource(`https://ntfy.sh/${NTFY_TOPIC}/sse`);
+        es.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.event === "message") {
+              if (msg.priority >= 4 || (msg.message && msg.message.includes("ALERTA"))) {
+                startSiren(msg.message);
+              }
+              fetchStatus(false);
+            }
+          } catch (e) {}
+        };
+      } catch (e) {}
+    }
+
+    setInterval(() => {
+      remainingSec--;
+      if (remainingSec <= 0) {
+        remainingSec = CHECK_INTERVAL_SEC;
+        fetchStatus(false);
+      }
+      const m = String(Math.floor(remainingSec / 60)).padStart(2, "0");
+      const s = String(remainingSec % 60).padStart(2, "0");
+      document.getElementById("countdownVal").textContent = `${m}:${s}`;
+    }, 1000);
+
+    // Poll backend status every 15s to stay synced with daemon's 5-min loop
+    setInterval(() => fetchStatus(false), 15000);
+    fetchStatus(false);
+    connectCloudStream();
+  </script>
+</body>
+</html>
